@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Doações e Comodatos - Casa Civil de Minas Gerais</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+    <style>
+        /* ============================================================
+           1. VARIÁVEIS DE CORES
+        ============================================================ */
+        :root {
+            --primary-dark:      #1a3a5c;
+            --primary-darker:    #0f2a44;
+            --accent-red:        #b93c42;
+            --accent-bright:     #db233f;
+            --background-light:  #f5f7fa;
+            --success-green:     #28a745;
+            --warning-yellow:    #ffc107;
+            --info-blue:         #17a2b8;
+        }
+
+        /* ============================================================
+           2. RESET E CONFIGURAÇÕES GLOBAIS
+        ============================================================ */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; overflow-x: hidden; margin: 0; padding: 0; height: auto; min-height: auto; }
+        body {
+            font-family: 'Montserrat', Segoe UI, Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-light);
+            padding-bottom: 15px;
+            overflow-x: hidden;
+        }
+        body, button, input, select, textarea, span, div { font-family: 'Montserrat', sans-serif !important; }
+        .material-icons { font-family: 'Material Icons' !important; font-size: 14px; vertical-align: middle; }
+
+        /* ============================================================
+           3. LAYOUT PRINCIPAL
+        ============================================================ */
+        .main-container { height: auto; min-height: auto; overflow: visible; position: relative; }
+        .container-fluid { width: 100%; max-width: 88% !important; padding: 0 40px; margin: 0; }
+        .dashboard-container { width: 100%; max-width: 100%; padding: 0 40px; margin: 0 auto; }
+        .tab-content, .tab-pane { width: 100%; height: auto; min-height: auto; overflow: visible; }
+        .table-container { height: auto; min-height: auto; overflow: visible; position: relative; }
+        .iframe-mode { overflow: visible !important; }
+
+        /* ============================================================
+           4. DATA DE ATUALIZAÇÃO
+        ============================================================ */
+        .data-atualizacao-container { display: flex; justify-content: left; align-items: center; margin: 15px 0; }
+        .data-atualizacao-box {
+            background: transparent !important;
+            border-radius: 8px;
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--primary-dark);
+            font-weight: 600;
+            box-shadow: none;
+        }
+        .data-atualizacao-box i { font-size: 14px; color: var(--accent-red); }
+
+        /* ============================================================
+           5. FILTROS
+        ============================================================ */
+        .filter-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            padding: 20px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .filter-label { font-size: 13px; font-weight: 600; color: #1a3a5c; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; display: block; }
+        .filter-label i { font-size: 14px; color: var(--accent-red); }
+        .form-control, .form-select {
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            height: auto;
+            width: 100%;
+        }
+        .form-control:focus, .form-select:focus { border-color: var(--accent-red); box-shadow: 0 0 0 2px rgba(185,60,66,0.15); }
+        .modern-select {
+            border: 1.5px solid #dfe5ec !important;
+            border-radius: 8px !important;
+            padding: 10px 12px !important;
+            font-size: 14px !important;
+            height: 48px !important;
+            line-height: 1.5 !important;
+            background-color: #fff;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+        .modern-select:focus { border-color: #1a3a5c !important; box-shadow: 0 0 0 2px rgba(26,58,92,0.1); }
+        .filters-row { display: flex; gap: 15px; width: 100%; flex-wrap: wrap; }
+        .filter-group { flex: 1; min-width: 120px; }
+        .consulta-filters-row { display: flex; flex-wrap: wrap; gap: 15px; width: 100%; }
+        .consulta-filter-group { flex: 1 1 calc(33.333% - 15px); min-width: 200px; }
+        .consulta-buttons-row { display: flex; gap: 10px; width: 100%; margin-top: 15px; justify-content: flex-start; flex-wrap: wrap; }
+        .botoes-abaixo { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+        /* ============================================================
+           6. CARDS DE MÉTRICAS
+        ============================================================ */
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e5e9ef;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+            overflow: hidden;
+            height: 100%;
+            transition: box-shadow 0.25s ease, transform 0.25s ease;
+        }
+        .metric-card:hover { box-shadow: 0 8px 24px rgba(26,58,92,0.13); transform: translateY(-2px); }
+        .metric-header {
+            background: #20445d;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .metric-body { padding: 12px 15px; }
+        .metric-value { font-size: 20px; font-weight: 700; color: #171c21; }
+        .metric-sublabel { font-size: 10px; color: #94a3b8; font-weight: 500; margin-top: 2px; }
+
+        /* ============================================================
+           7. GRÁFICOS
+        ============================================================ */
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+            margin-bottom: 20px;
+            padding: 0;
+            overflow: hidden;
+        }
+        .chart-header { background: #20445d; color: white; padding: 12px 16px; margin: 0; }
+        .chart-title { font-size: 14px; font-weight: 600; color: white; margin: 0; }
+        .chart-wrapper { height: 300px; display: flex; align-items: center; justify-content: center; padding: 10px 15px; width: 100%; }
+        .chart-container.chart-pizza-container { min-height: auto; }
+        .chart-wrapper.chart-pizza { height: auto; display: flex; align-items: center; justify-content: center; padding: 10px 20px 0 20px; }
+        .chart-pizza-layout { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 10px; padding: 10px 20px; }
+        .chart-pizza-box { width: 200px; height: 200px; flex-shrink: 0; }
+        .legend-grid { display: grid; grid-template-columns: 1fr 1fr; justify-content: center; align-items: flex-start; gap: 6px 20px; font-size: 8px; width: 100%; padding: 4px 10px 10px; }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-color { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+
+        /* ============================================================
+           8. TABELAS
+        ============================================================ */
+        .table-badge { background: #1a3a5c; color: white; padding: 5px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+        .table-fixed-header-container { position: relative; overflow: auto; width: 100%; max-height: 600px; }
+        .table-fixed-header-container table thead th {
+            background-color: #54697b !important;
+            color: white !important;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-weight: 600;
+            padding: 12px 10px;
+            font-size: 12px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .table { width: 100%; font-size: 13px; border-collapse: collapse; table-layout: auto; }
+        .table th, .table td { border: 1px solid #d6dee6; }
+        .table thead th {
+            background-color: #54697b !important;
+            color: white !important;
+            font-weight: 600;
+            font-size: 12px;
+            padding: 12px 10px;
+            text-transform: uppercase;
+            border: 1px solid #d6dee6;
+            cursor: pointer;
+            user-select: none;
+        }
+        .table thead th:first-child { border-top-left-radius: 8px; }
+        .table thead th:last-child  { border-top-right-radius: 8px; }
+        .table thead th:hover { background-color: #3d5566 !important; }
+        .sortable-header { cursor: pointer; position: relative; padding-right: 22px !important; }
+        .sortable-header:hover { background-color: #3d5566 !important; }
+        .sortable-header i { font-size: 13px; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); opacity: 0.8; }
+        .table tbody tr { background-color: #ffffff; }
+        .table tbody td { padding: 10px 10px; vertical-align: middle; border-bottom: 1px solid #f1f1f1; font-size: 12px; }
+        .table tbody tr:hover { background-color: rgba(41,67,90,0.04); }
+        .table tfoot { position: sticky; bottom: 0; z-index: 20; }
+        .table tfoot tr, .table tfoot td { background-color: #dfe3e8 !important; font-weight: 700; font-size: 12px; }
+        .table-bordered { border: 1px solid #dee2e6; width: 100%; }
+        .table-bordered th, .table-bordered td { border: 1px solid #dee2e6; padding: 12px; vertical-align: top; }
+        .orgao-link { color: #006a82; text-decoration: none; font-weight: 400; cursor: pointer; }
+        .orgao-link:hover { color: var(--accent-red); text-decoration: underline; }
+        .nome-link { color: #006a82 !important; text-decoration: none !important; font-weight: 400; }
+        .nome-link:hover { color: #b93c42 !important; text-decoration: underline !important; }
+
+        /* ============================================================
+           9. BOTÕES
+        ============================================================ */
+        .btn-pesquisa {
+            background: linear-gradient(to right, #20445d, #20445d);
+            border: none;
+            padding: 0 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-size: 13px;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            height: 36px;
+            white-space: nowrap;
+        }
+        .btn-pesquisa:hover { background: linear-gradient(to right, var(--accent-red), #a32c32); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(185,60,66,0.2); color: white; }
+        .btn-secondary-custom {
+            background: white;
+            border: 2px solid var(--primary-darker);
+            color: var(--primary-darker);
+            padding: 0 16px;
+            font-weight: 600;
+            font-size: 13px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            height: 36px;
+            white-space: nowrap;
+            text-decoration: none !important;
+        }
+        .btn-secondary-custom:hover { background-color: #132837 !important; color: white !important; border-color: #132837 !important; }
+        .btn-export {
+            appearance: none;
+            -webkit-appearance: none;
+            background: transparent !important;
+            border: 1px solid #d6dee6;
+            color: #1a3a5c;
+            padding: 0 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            height: 32px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-export i { font-size: 14px !important; }
+        button.btn-export:hover, a.btn-export:hover { background-color: #1a3a5c !important; border-color: #1a3a5c !important; color: #ffffff !important; }
+        .btn-action {
+            padding: 4px;
+            border-radius: 7px;
+            border: 1.5px solid #1a3a5c;
+            background-color: #ffffff;
+            color: #1a3a5c;
+            width: 32px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .btn-action:hover { background-color: #1a3a5c; color: #ffffff; }
+        .btn-topo {
+            background: #eeeff5;
+            color: #1a3a5c;
+            border: 1px solid #d6dee6;
+            border-radius: 12px;
+            padding: 0 16px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            height: 32px;
+        }
+        .btn-topo:hover { background-color: #1a3a5c; color: #ffffff; border-color: #1a3a5c; }
+
+        /* ============================================================
+           10. NAVEGAÇÃO (abas)
+        ============================================================ */
+        .nav-tabs-container { background: transparent; padding: 10px 0; margin-top: 15px; margin-bottom: 15px; width: 100%; }
+        .nav-tabs { border: none !important; gap: 10px; width: 100%; flex-wrap: wrap; }
+        .nav-tabs .nav-link {
+            border: none !important;
+            background: #ffffff !important;
+            border-radius: 10px !important;
+            padding: 8px 18px !important;
+            font-weight: 500;
+            font-size: 14px;
+            color: #1a3a5c !important;
+            display: inline-flex !important;
+            align-items: center;
+            gap: 6px;
+            transition: all .25s ease;
+        }
+        .nav-tabs .nav-link:hover { background: #e6e9ed !important; }
+        .nav-tabs .nav-link.active { background: #234c63 !important; color: #fff !important; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .nav-tabs .material-icons { font-size: 14px !important; }
+
+        /* ============================================================
+           11. MODAL
+        ============================================================ */
+        .modal-full-custom { max-width: 82% !important; width: 82% !important; }
+        .modal-creative .modal-header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-darker) 100%);
+            color: white !important;
+            padding: 15px 20px;
+            border-bottom: none;
+        }
+        .modal-creative .modal-header .modal-title { color: white !important; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .modal-creative .modal-header .btn-close { filter: brightness(0) invert(1); opacity: 1; }
+        .modal-server-banner {
+            background: linear-gradient(135deg, #20445d 0%, #162f42 100%);
+            color: white;
+            padding: 13px 18px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .modal-server-banner .server-name { font-size: 15px; font-weight: 700; line-height: 1.2; }
+        .modal-server-banner .server-meta { font-size: 11px; opacity: 0.85; margin-top: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .info-section { background: #f8fafd; border-radius: 10px; padding: 13px 16px; margin-bottom: 13px; border: 1px solid #e2e8f0; }
+        .info-section h6 { font-weight: 700; color: #1a3a5c; margin-bottom: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+        .info-row { display: flex; padding: 5px 0; border-bottom: 1px solid #f0f4f8; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label-modal { width: 42%; font-weight: 600; color: #64748b; font-size: 11px; }
+        .info-value-modal { width: 58%; color: #1e293b; font-size: 11px; font-weight: 500; word-break: break-word; }
+
+        /* ============================================================
+           12. PAGINAÇÃO
+        ============================================================ */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px 20px;
+            background: white;
+            border-top: 1px solid #dee2e6;
+            width: 100%;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .pagination-info { font-size: 12px; color: #6c757d; }
+        .pagination .page-link { color: var(--primary-dark); border-color: #dee2e6; font-size: 13px; padding: 4px 10px; }
+        .pagination .page-link:hover { color: var(--accent-red); background-color: #f8f9fa; }
+        .pagination .page-item.active .page-link { background-color: var(--primary-dark); border-color: var(--primary-dark); color: white; }
+        .items-per-page {
+            height: 34px;
+            min-width: 80px;
+            border-radius: 8px;
+            border: 1px solid #d6dee6;
+            padding: 4px 28px 4px 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1a3a5c;
+            background-color: #ffffff;
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml;utf8,<svg fill='%231a3a5c' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 6px center;
+        }
+
+        /* ============================================================
+           13. BUSCA NA TABELA
+        ============================================================ */
+        .table-search-container {
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            background: #ffffff;
+            border: 1px solid #d6dee6;
+            border-radius: 8px;
+            padding: 5px 10px;
+            height: 34px;
+        }
+        .table-search-container:hover { border-color: #1a3a5c; }
+        .table-search-input { border: none !important; outline: none; background: transparent; font-size: 12px; width: 220px; color: #1a3a5c; }
+        .table-search-input::placeholder { color: #94a3b8; }
+        .table-search-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ============================================================
+           14. BADGES
+        ============================================================ */
+        .badge-sit { padding: 3px 8px; border-radius: 20px; font-size: 10.5px; font-weight: 700; display: inline-block; letter-spacing: 0.2px; }
+        .badge-doacao   { background: #dcf5e7; color: #0f6b3a; border: 1px solid #b2e6c8; }
+        .badge-comodato { background: #fff8e1; color: #7a5b00; border: 1px solid #ffe082; }
+        .badge-publico  { background: #e0f0ff; color: #0a4a82; border: 1px solid #b3d4f5; }
+        .badge-privado  { background: #f0f2f5; color: #4a5568; border: 1px solid #dce3ec; }
+        .badge-outro    { background: #f0f2f5; color: #4a5568; border: 1px solid #dce3ec; }
+
+        /* ============================================================
+           15. TOOLBAR
+        ============================================================ */
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+        .toolbar-left  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .toolbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+        /* ============================================================
+           16. LOADING
+        ============================================================ */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(238,241,246,0.95);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .loading-progress { font-size: 13px; color: #20445d; font-weight: 700; }
+
+        /* ============================================================
+           17. TOAST
+        ============================================================ */
+        .toast-sucesso {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e6f4ea;
+            color: #1e4620;
+            border-radius: 12px;
+            padding: 14px 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            z-index: 9999;
+            min-width: 280px;
+        }
+        .toast-content { display: flex; align-items: center; justify-content: center; width: 100%; text-align: center; gap: 10px; }
+        .toast-content i { color: #28a745; font-size: 14px; }
+        .toast-close { cursor: pointer; font-size: 14px; margin-left: 10px; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ============================================================
+           18. HINT BUSCA MÍNIMO
+        ============================================================ */
+        .search-hint { font-size: 10px; color: #94a3b8; margin-top: 3px; }
+        .search-hint.warn { color: #b93c42; }
+
+        /* ============================================================
+           19. RESPONSIVIDADE
+        ============================================================ */
+        @media (max-width: 992px) {
+            .container-fluid, .dashboard-container { padding: 0 15px; }
+            .modal-full-custom { max-width: 95% !important; width: 95% !important; }
+        }
+        @media (max-width: 768px) {
+            .filters-row { flex-direction: column; align-items: stretch; }
+            .filter-group { min-width: 100%; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .table-search-input { width: 100% !important; }
+        }
+    </style>
+</head>
+<body class="iframe-mode">
+
+<div class="main-container">
+    <div class="container-fluid dashboard-container">
+
+        <!-- Abas -->
+        <div class="nav-tabs-container">
+            <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#visao">
+                        <i class="material-icons">bar_chart</i>Visão Geral
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="consulta-tab-btn" data-bs-toggle="tab" data-bs-target="#consulta">
+                        <i class="material-icons">search</i>Consulta Individual
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#downloads">
+                        <i class="material-icons">download</i>Downloads
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Data de atualização -->
+        <div class="data-atualizacao-container">
+            <div class="data-atualizacao-box">
+                <i class="material-icons">event</i>
+                Data de atualização: <span id="data-atualizacao-header" style="margin-left:4px;">carregando...</span>
+            </div>
+        </div>
+
+        <!-- Conteúdo das abas -->
+        <div class="tab-content" id="dashboardTabsContent">
+            <div class="tab-pane fade show active" id="visao" role="tabpanel">
+                <div id="visao-content"></div>
+            </div>
+            <div class="tab-pane fade" id="consulta" role="tabpanel">
+                <div id="consulta-content"></div>
+            </div>
+            <div class="tab-pane fade" id="downloads" role="tabpanel">
+                <div id="downloads-content"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal de Detalhes -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-full-custom modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content modal-creative">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="material-icons">description</i> Detalhes da Doação / Comodato
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalContent"></div>
+            <div class="modal-footer" style="gap:8px;">
+                <button type="button" class="btn-export" onclick="exportarModalPDF()">
+                    <i class="material-icons">print</i> PDF
+                </button>
+                <button type="button" class="btn-export" onclick="copiarLinkDireto()">
+                    <i class="material-icons">link</i> Copiar Link
+                </button>
+                <button type="button" class="btn-secondary-custom" data-bs-dismiss="modal">
+                    <i class="material-icons">close</i> Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toastSucesso" class="toast-sucesso">
+    <div class="toast-content">
+        <i class="material-icons">check_circle</i>
+        <span>Sucesso!<br>Link copiado para área de transferência</span>
+    </div>
+    <span class="toast-close" onclick="fecharToast()">✖</span>
+</div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loadingOverlay" style="display:none;">
+    <div class="spinner-border" role="status" style="color:#20445d;width:2.5rem;height:2.5rem;"></div>
+    <div class="loading-progress" id="loadingProgress">Carregando dados...</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// ============================================================
+// 1. CONFIGURAÇÃO
+// ============================================================
+const CSV_URL = 'https://raw.githubusercontent.com/transparencia-mg/casa_civil_doacoes-comodatos/main/dataset/data/Doacoes_e_Comodatos.csv';
+const CSV_HISTORICO_URL = 'https://raw.githubusercontent.com/transparencia-mg/casa_civil_doacoes-comodatos-historico/main/dataset/data/doacoes-comodatos-amigo-estado-mg.csv';
+const chartPalette = ['#2f4b63','#39a585','#5f6f7f','#f28c28','#7aa6c2','#8e44ad','#c0392b','#16a085','#d35400','#2980b9'];
+
+// ============================================================
+// 2. DE-PARA: UNIFORMIZAÇÃO DE NOMES DE ÓRGÃOS
+// ============================================================
+const ORGAO_DE_PARA = {
+    // ARSAE
+    'ARSAE': 'Agência Reguladora de Serviços de Abastecimento de Água e de Esgotamento Sanitário',
+    // CBMMG
+    'CBMMG': 'Corpo de Bombeiros Militar de Minas Gerais',
+    'Corpo de Bombeiros de Minas Gerais - CBMMG': 'Corpo de Bombeiros Militar de Minas Gerais',
+    'Corpo de Bombeiros Militar de Minas Gerais - CBMMG': 'Corpo de Bombeiros Militar de Minas Gerais',
+    // CGE
+    'CGE': 'Controladoria-Geral do Estado de Minas Gerais',
+    // DER
+    'Departamento de Estradas de Rodagem do Estado de Minas Gerais - DER': 'Departamento de Estradas de Rodagem',
+    'DER': 'Departamento de Estradas de Rodagem',
+    'DER-MG': 'Departamento de Estradas de Rodagem',
+    // FHEMIG
+    'FHEMIG': 'Fundação Hospitalar do Estado de Minas Gerais',
+    'Fundação Hospitalar do Estado de Minas Gerais - FHEMIG': 'Fundação Hospitalar do Estado de Minas Gerais',
+    'Fundação Hospitalar do Estado de Minas Gerais – FHEMIG': 'Fundação Hospitalar do Estado de Minas Gerais',
+    // FEAM
+    'Fundação Estadual do Meio Ambiente - FEAM': 'Fundação Estadual do Meio Ambiente',
+    // FUNED
+    'FUNED': 'Fundação Ezequiel Dias',
+    // GMG
+    'Gabinete Militar do Governador de Minas Gerais – GMG': 'Gabinete Militar do Governador',
+    'GMG': 'Gabinete Militar do Governador',
+    // IEF
+    'IEF': 'Instituto Estadual de Florestas',
+    'Instituto Estadual de Florestas - IEF': 'Instituto Estadual de Florestas',
+    'Intituto Estadual de Florestas - IEF': 'Instituto Estadual de Florestas',
+    // IEPHA
+    'IEPHA': 'Instituto do Patrimônio Histórico e Artístico de Minas Gerais',
+    // IPSEMG
+    'Instituto de Previdência dos Servidores do Estado de Minas Gerais - IPSEMG': 'Instituto de Previdência dos Servidores do Estado de Minas Gerais',
+    // IMA
+    'Instituto Mineiro de Agropecuária - IMA': 'Instituto Mineiro de Agropecuária',
+    // JUCEMG
+    'JUCEMG': 'Junta Comercial do Estado de Minas Gerais',
+    // PCMG
+    'PCMG': 'Polícia Civil do Estado de Minas Gerais',
+    'Policia Civil de Minas Gerais - PCMG': 'Polícia Civil do Estado de Minas Gerais',
+    'Polícia Civil de Minas Gerais - PCMG': 'Polícia Civil do Estado de Minas Gerais',
+    'POLÍCIA CIVIL DE MINAS GERAIS - PCMG': 'Polícia Civil do Estado de Minas Gerais',
+    'Polícia Civil de Minas Gerais – PCMG': 'Polícia Civil do Estado de Minas Gerais',
+    'Polícia Civil do Estado de Minas Gerais – PCMG': 'Polícia Civil do Estado de Minas Gerais',
+    'Polícia Civil do Estado de Minas Gerais\u200b – PCMG': 'Polícia Civil do Estado de Minas Gerais',
+    // PMMG
+    'PMMG': 'Polícia Militar de Minas Gerais',
+    'Polícia Militar de Minas Gerais - PMMG': 'Polícia Militar de Minas Gerais',
+    'PolÍcia Militar de Minas Gerais - PMMG': 'Polícia Militar de Minas Gerais',
+    'Polícia Militar de Minas Gerais – PMMG': 'Polícia Militar de Minas Gerais',
+    'Polícia Militar de Minas Gerais\u200b – PMMG': 'Polícia Militar de Minas Gerais',
+    'Polícia Militar Militar de Minas Gerais - PMMG': 'Polícia Militar de Minas Gerais',
+    // SCC
+    'SECRETARIA DE ESTADO DE CASA CIVIL - SCC': 'Secretaria de Estado de Casa Civil',
+    // SECULT
+    'SECULT': 'Secretaria de Estado de Cultura',
+    'Secretaria de Estado de Cultura de Minas Gerais - SECULT': 'Secretaria de Estado de Cultura',
+    'Secretaria de Estado de Cultura e Turismo - SECULT': 'Secretaria de Estado de Cultura',
+    'Secretaria de Estado de Cultura e Turismo de Minas Gerais – SECULT': 'Secretaria de Estado de Cultura',
+    // SEDE / SEDECTES
+    'SEDE': 'Secretaria de Estado de Desenvolvimento Econômico',
+    'SEDECTES': 'Secretaria de Estado de Desenvolvimento Econômico',
+    // SEDESE
+    'SEDESE': 'Secretaria de Estado de Desenvolvimento Social',
+    'Secretaria de Estado de Desenvolvimento Social - SEDESE': 'Secretaria de Estado de Desenvolvimento Social',
+    'Secretaria de Estado de Desenvolvimento Social de Minas Gerais - SEDESE': 'Secretaria de Estado de Desenvolvimento Social',
+    // SEE
+    'SEE': 'Secretaria de Estado de Educação',
+    'Secretaria de Estado de Educação de Minas Gerais – SES': 'Secretaria de Estado de Saúde',
+    // SEGOV
+    'SEGOV': 'Secretaria de Estado de Governo',
+    // SEINFRA
+    'SEINFRA': 'Secretaria de Estado de Infraestrutura e Mobilidade',
+    // SEJUSP
+    'SEJUSP': 'Secretaria de Estado de Justiça e Secretaria Pública',
+    'Secretaria de Estado de Justiça e Segurança Pública': 'Secretaria de Estado de Justiça e Secretaria Pública',
+    'Secretaria de Estado de Justiça e Segurança Pública - SEJUSP': 'Secretaria de Estado de Justiça e Secretaria Pública',
+    'Secretaria de Estado de Justiça e Segurança Pública – SEJUSP': 'Secretaria de Estado de Justiça e Secretaria Pública',
+    'Secretaria de Estado de Justiça e Segurança Pública - SEJUSP.': 'Secretaria de Estado de Justiça e Secretaria Pública',
+    'Secretaria de Estado de Justiça e Segurança Pública\u200b - SEJUS': 'Secretaria de Estado de Justiça e Secretaria Pública',
+    'Secretaria de Estado de Justiça e Segurança Pública\u200b - SEJUSP': 'Secretaria de Estado de Justiça e Secretaria Pública',
+    'Secretaria de Justiça e Segurança Pública - SEJUSP': 'Secretaria de Estado de Justiça e Secretaria Pública',
+    // SEMAD
+    'SEMAD': 'Secretaria de Estado de Meio Ambiente e Desenvolvimento Sustentável',
+    'Secretaria de Estado de Meio Ambiente - SEMAD': 'Secretaria de Estado de Meio Ambiente e Desenvolvimento Sustentável',
+    'Secretaria de Estado de Meio Ambiente e Desenvolvimento Sustentável - SEMAD': 'Secretaria de Estado de Meio Ambiente e Desenvolvimento Sustentável',
+    'Secretaria de Estado de Meio Ambiente e Desenvolvimento Sustentável – SEMAD': 'Secretaria de Estado de Meio Ambiente e Desenvolvimento Sustentável',
+    // SEPLAG
+    'SEPLAG': 'Secretaria de Estado de Planejamento e Gestão',
+    // SES
+    'SES': 'Secretaria de Estado de Saúde',
+    'Secretaria de Estado de Saúde - SES': 'Secretaria de Estado de Saúde',
+    'Secretaria de Estado de Saúde - SES MG': 'Secretaria de Estado de Saúde',
+    'Secretaria de Estado de Saúde de Minas Gerais - SES': 'Secretaria de Estado de Saúde',
+    'Secretaria de Estado de Saúde de Minas Gerais - SES/MG': 'Secretaria de Estado de Saúde',
+    'Secretaria de Estado de Saúde de Minas Gerais - SESMG': 'Secretaria de Estado de Saúde',
+    'Secretaria de Estado de Saúde de Minas Gereais - SES': 'Secretaria de Estado de Saúde',
+    // UEMG
+    'UEMG': 'Universidade do Estado de Minas Gerais',
+    // UNIMONTES
+    'UNIMONTES': 'Universidade Estadual de Montes Claros',
+    'Universidade Estadual de Montes Claros - UNIMONTES': 'Universidade Estadual de Montes Claros',
+    // UTRAMIG
+    'UTRAMIG': 'Fundação de Educação para o Trabalho de Minas Gerais'
+};
+
+/**
+ * Normaliza o nome do órgão usando o mapeamento DE-PARA.
+ * Aplica trim e trata espaços em branco extras antes de buscar no mapa.
+ * Se não encontrar correspondência exata, retorna o valor original.
+ */
+function normalizarOrgao(nome) {
+    if (!nome) return nome;
+    const limpo = nome.trim().replace(/\s+/g, ' ');
+    return ORGAO_DE_PARA[limpo] || limpo;
+}
+
+// ============================================================
+// 3. ESTADO GLOBAL
+// ============================================================
+let dadosCompletos = [];
+let dadosFiltrados = [];
+let itemSelecionado = null;
+
+// Visão Geral
+let filtroVisao = { ano: '', orgao: '' };
+let paginaVisao = 1, itensPorPaginaVisao = 25;
+let ordenacaoVisao = { col: 'orgao_recebedor', dir: 'asc' };
+let chartEvolucao = null;
+
+// Consulta Individual
+let filtroConsulta = { ano: '', tipo: '', orgao: '', natureza: '', doador: '', palavra: '' };
+let paginaConsulta = 1, itensPorPaginaConsulta = 50;
+let ordenacaoConsulta = { col: 'ano_instrumento', dir: 'desc' };
+let buscaRapida = '';
+let buscaCharCount = 0;
+
+// ============================================================
+// 4. AUXILIARES
+// ============================================================
+function mostrarLoading(show, msg) {
+    document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+    if (msg) document.getElementById('loadingProgress').textContent = msg;
+}
+
+function v(val) { return val || '-'; }
+function escapar(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+function badgeTipo(tipo) {
+    if (!tipo) return '<span class="badge-sit badge-outro">-</span>';
+    const t = tipo.toLowerCase();
+    if (t.includes('doa')) return `<span class="badge-sit badge-doacao">${tipo}</span>`;
+    if (t.includes('comodato')) return `<span class="badge-sit badge-comodato">${tipo}</span>`;
+    return `<span class="badge-sit badge-outro">${tipo}</span>`;
+}
+
+function badgeNatureza(natureza) {
+    if (!natureza) return '<span class="badge-sit badge-outro">-</span>';
+    const n = natureza.toLowerCase();
+    if (n.includes('p\u00fablico') || n.includes('publico')) return `<span class="badge-sit badge-publico">${natureza}</span>`;
+    return `<span class="badge-sit badge-privado">${natureza}</span>`;
+}
+
+function mostrarToast() {
+    const toast = document.getElementById('toastSucesso');
+    toast.style.display = 'flex';
+    toast.style.animation = 'none';
+    toast.offsetHeight;
+    toast.style.animation = 'fadeInUp 0.3s ease';
+    setTimeout(() => { toast.style.display = 'none'; }, 3000);
+}
+function fecharToast() { document.getElementById('toastSucesso').style.display = 'none'; }
+
+function copiarLinkDireto() {
+    navigator.clipboard.writeText(window.location.href)
+        .then(() => mostrarToast())
+        .catch(() => alert('Erro ao copiar o link'));
+}
+
+function voltarAoTopo() {
+    if (window.parent && window.parent !== window) {
+        window.parent.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function iframeUpdateHeight() {
+    try {
+        const h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) + 10;
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ iframeHeight: h, height: h, type: 'resize' }, '*');
+        }
+    } catch(e) {}
+}
+
+// ============================================================
+// 5. CARREGAMENTO DOS DADOS
+// ============================================================
+
+// Extrai o ano de ano_instrumento, que pode vir como "2025,0" → "2025"
+function extrairAno(val) {
+    if (!val) return '';
+    const s = String(val).trim();
+    const m = s.match(/\b(19|20)\d{2}\b/);
+    if (m) return m[0];
+    const clean = s.replace(/[^0-9]/g, '');
+    return clean.length >= 4 ? clean.slice(0, 4) : '';
+}
+
+async function carregarDados() {
+    mostrarLoading(true, 'Carregando dados de Doações e Comodatos...');
+    try {
+        const [respAtual, respHistorico] = await Promise.all([
+            fetch(CSV_URL),
+            fetch(CSV_HISTORICO_URL)
+        ]);
+        const [csvAtual, csvHistorico] = await Promise.all([
+            respAtual.text(),
+            respHistorico.text()
+        ]);
+
+        const resultAtual = Papa.parse(csvAtual, {
+            header: true, delimiter: ';', skipEmptyLines: true
+        });
+
+        const resultHistorico = Papa.parse(csvHistorico, {
+            header: true, delimiter: ';', skipEmptyLines: true
+        });
+
+        // Processa dados atuais — aplica normalizarOrgao no orgao_recebedor
+        const dadosAtuais = resultAtual.data.map(row => ({
+            tipo_instrumento:       (row.tipo_instrumento || '').trim(),
+            ano_instrumento:        extrairAno(row.ano_instrumento),
+            mes_instrumento:        (row.mes_instrumento  ? String(row.mes_instrumento).replace(/[^0-9]/g,'').trim() : ''),
+            categoria_valor:        (row.categoria_valor  || '').trim(),
+            orgao_recebedor:        normalizarOrgao((row.orgao_recebedor  || '').trim()),
+            codigo_orgao_recebedor: (row.codigo_orgao_recebedor || '').trim(),
+            natureza_doador:        (row.natureza_doador  || '').trim(),
+            doador_comodante:       (row.doador_comodante || '').trim(),
+            objeto_descritivo:      (row.objeto_descritivo || '').trim(),
+            quantidade_objeto:      (row.quantidade_objeto || '1').trim(),
+            vigencia:               (row.vigencia || '').trim(),
+            processo_sei:           (row.processo_sei || '').trim(),
+            recurso_tjmg_ou_mpmg:   (row.recurso_tjmg_ou_mpmg || '').trim(),
+            _fonte: 'atual'
+        })).filter(item => item.tipo_instrumento);
+
+        const anosAtuais = new Set(dadosAtuais.map(d => d.ano_instrumento).filter(Boolean));
+
+        // Processa dados históricos — aplica normalizarOrgao no orgao_recebedor
+        const dadosHistoricos = resultHistorico.data.map(row => {
+            const anoHist = extrairAno(row.ano || '');
+            const objeto = (row.objeto || '').trim();
+            let tipo = 'Doação';
+            const objLower = objeto.toLowerCase();
+            if (objLower.startsWith('comodato')) tipo = 'Comodato';
+            else if (objLower.includes('comodato')) tipo = 'Comodato';
+
+            return {
+                tipo_instrumento:       tipo,
+                ano_instrumento:        anoHist,
+                mes_instrumento:        '',
+                categoria_valor:        '',
+                orgao_recebedor:        normalizarOrgao((row.orgao_entidade || '').trim()),
+                codigo_orgao_recebedor: (row.codigo_orgao_entidade || '').trim(),
+                natureza_doador:        '',
+                doador_comodante:       (row.doador_comodante || '').trim(),
+                objeto_descritivo:      objeto,
+                quantidade_objeto:      (row.quantitativo || '1').trim(),
+                vigencia:               (row.vigencia || '').trim(),
+                processo_sei:           (row.processo_sei || '').trim(),
+                recurso_tjmg_ou_mpmg:   '',
+                _fonte: 'historico'
+            };
+        }).filter(item => {
+            return item.ano_instrumento && !anosAtuais.has(item.ano_instrumento) && item.orgao_recebedor;
+        });
+
+        dadosCompletos = [...dadosHistoricos, ...dadosAtuais];
+
+        const dataEl = document.getElementById('data-atualizacao-header');
+        if (dataEl) dataEl.textContent = new Date().toLocaleDateString('pt-BR');
+
+        mostrarLoading(false);
+        renderVisaoGeral();
+        renderDownloads();
+
+    } catch (error) {
+        mostrarLoading(false);
+        document.getElementById('visao-content').innerHTML = '<div class="alert alert-danger m-3">Erro ao carregar dados. Verifique a conexão.</div>';
+    }
+}
+
+// ============================================================
+// 6. VISÃO GERAL
+// ============================================================
+function renderVisaoGeral() {
+    let dados = dadosCompletos;
+    if (filtroVisao.ano) {
+        dados = dados.filter(d => d.ano_instrumento === filtroVisao.ano);
+    }
+    if (filtroVisao.orgao) {
+        const orgLower = filtroVisao.orgao.toLowerCase();
+        dados = dados.filter(d => (d.orgao_recebedor||'').toLowerCase().includes(orgLower));
+    }
+
+    const total = dados.length;
+    const doacoes   = dados.filter(d => d.tipo_instrumento.toLowerCase().includes('doa')).length;
+    const comodatos = dados.filter(d => d.tipo_instrumento.toLowerCase().includes('comodato')).length;
+    const totalOrgaos = new Set(dados.map(d => d.orgao_recebedor).filter(Boolean)).size;
+
+    const orgaosMap = {};
+    for (const d of dados) {
+        const org = d.orgao_recebedor || 'NÃO INFORMADO';
+        if (!orgaosMap[org]) orgaosMap[org] = { total: 0, doacoes: 0, comodatos: 0, qtdBens: 0 };
+        orgaosMap[org].total++;
+        const qtd = parseInt(d.quantidade_objeto) || 1;
+        orgaosMap[org].qtdBens += qtd;
+        if (d.tipo_instrumento.toLowerCase().includes('doa')) orgaosMap[org].doacoes++;
+        else orgaosMap[org].comodatos++;
+    }
+
+    let listaOrgaos = Object.entries(orgaosMap).map(([nome, info]) => ({ nome, ...info }));
+    listaOrgaos.sort((a, b) => {
+        const col = ordenacaoVisao.col;
+        let va = col === 'orgao_recebedor' ? a.nome : (a[col] || 0);
+        let vb = col === 'orgao_recebedor' ? b.nome : (b[col] || 0);
+        if (typeof va === 'string') va = va.toLowerCase();
+        if (typeof vb === 'string') vb = vb.toLowerCase();
+        return ordenacaoVisao.dir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+    });
+
+    const totalPags = Math.ceil(listaOrgaos.length / itensPorPaginaVisao);
+    paginaVisao = Math.min(paginaVisao, Math.max(1, totalPags));
+    const inicio = (paginaVisao - 1) * itensPorPaginaVisao;
+    const pagina = listaOrgaos.slice(inicio, inicio + itensPorPaginaVisao);
+
+    const evolucaoAll = {};
+    dadosCompletos.forEach(d => {
+        const ano = d.ano_instrumento;
+        if (ano && ano !== '0' && ano !== '' && /^(19|20)\d{2}$/.test(ano)) {
+            if (!evolucaoAll[ano]) evolucaoAll[ano] = 0;
+            evolucaoAll[ano] += parseInt(d.quantidade_objeto) || 1;
+        }
+    });
+    const evolucaoOrdenada = Object.entries(evolucaoAll).sort((a,b) => a[0].localeCompare(b[0]));
+
+    const anosDisp = [...new Set(dadosCompletos.map(d => d.ano_instrumento).filter(a => a && a !== '0' && /^(19|20)\d{2}$/.test(a)))].sort();
+
+    const totalQtdBens = listaOrgaos.reduce((a, o) => a + o.qtdBens, 0);
+
+    const thSort = (col, label) => {
+        const ativo = ordenacaoVisao.col === col;
+        const icon  = ativo ? (ordenacaoVisao.dir === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more';
+        return `<th class="sortable-header text-center" onclick="ordenarVisao('${col}')">
+            ${label} <i class="material-icons">${icon}</i>
+        </th>`;
+    };
+    const thSortLeft = (col, label) => {
+        const ativo = ordenacaoVisao.col === col;
+        const icon  = ativo ? (ordenacaoVisao.dir === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more';
+        return `<th class="sortable-header" onclick="ordenarVisao('${col}')">
+            ${label} <i class="material-icons">${icon}</i>
+        </th>`;
+    };
+
+    const html = `
+    <!-- FILTROS -->
+    <div class="filter-container">
+        <div class="filters-row">
+            <div class="filter-group" style="flex:0 0 auto;">
+                <label class="filter-label">Ano</label>
+                <select class="form-select modern-select" id="vg-ano" style="min-width:120px;max-width:150px">
+                    <option value="">Todos</option>
+                    ${anosDisp.map(a => `<option value="${a}" ${filtroVisao.ano === a ? 'selected' : ''}>${a}</option>`).join('')}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Órgão Recebedor</label>
+                <input class="form-control" id="vg-orgao" placeholder="Filtrar por órgão..." value="${filtroVisao.orgao || ''}">
+            </div>
+        </div>
+        <div class="botoes-abaixo">
+            <button class="btn-pesquisa" onclick="aplicarFiltroVisao()">
+                <i class="material-icons">search</i> Pesquisar
+            </button>
+            <button class="btn-secondary-custom" onclick="limparFiltroVisao()">
+                <i class="material-icons">clear</i> Limpar
+            </button>
+        </div>
+    </div>
+
+    <!-- CARDS MÉTRICAS -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="metric-card">
+                <div class="metric-header">Total de Registros <i class="material-icons" data-bs-toggle="tooltip" title="Total de instrumentos no período">info_outline</i></div>
+                <div class="metric-body">
+                    <div class="metric-value">${total.toLocaleString('pt-BR')}</div>
+                    <div class="metric-sublabel">${totalOrgaos} órgãos recebedores</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="metric-card">
+                <div class="metric-header">Doações <i class="material-icons" data-bs-toggle="tooltip" title="Total de doações">info_outline</i></div>
+                <div class="metric-body">
+                    <div class="metric-value">${doacoes.toLocaleString('pt-BR')}</div>
+                    <div class="metric-sublabel">${total > 0 ? (doacoes/total*100).toFixed(1) + '% do total' : ''}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="metric-card">
+                <div class="metric-header">Comodatos <i class="material-icons" data-bs-toggle="tooltip" title="Total de comodatos">info_outline</i></div>
+                <div class="metric-body">
+                    <div class="metric-value">${comodatos.toLocaleString('pt-BR')}</div>
+                    <div class="metric-sublabel">${total > 0 ? (comodatos/total*100).toFixed(1) + '% do total' : ''}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="metric-card">
+                <div class="metric-header">Qtd. de Bens <i class="material-icons" data-bs-toggle="tooltip" title="Soma da quantidade de bens">info_outline</i></div>
+                <div class="metric-body">
+                    <div class="metric-value">${totalQtdBens.toLocaleString('pt-BR')}</div>
+                    <div class="metric-sublabel">itens no período</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRÁFICO: apenas Evolução por Ano -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="chart-container">
+                <div class="chart-header"><h4 class="chart-title">Evolução por Ano — Quantidade de Bens</h4></div>
+                <div class="chart-wrapper">
+                    <div style="width:100%;height:280px;position:relative;">
+                        <canvas id="chartEvolucaoAno"></canvas>
+                    </div>
+                </div>
+                <div style="display:flex;gap:18px;padding:8px 18px 12px;font-size:11px;color:#54697b;">
+                    <span style="display:flex;align-items:center;gap:6px;"><span style="width:14px;height:14px;border-radius:3px;background:#7aa6c2;display:inline-block;"></span>Dados históricos (até 2023)</span>
+                    <span style="display:flex;align-items:center;gap:6px;"><span style="width:14px;height:14px;border-radius:3px;background:#2f4b63;display:inline-block;"></span>Dados atuais (2024 em diante)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOOLBAR TABELA -->
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <button class="btn-export" onclick="exportarVisaoCSV()">
+                <i class="material-icons">description</i> CSV
+            </button>
+            <button class="btn-export" onclick="exportarVisaoPDF()">
+                <i class="material-icons">print</i> PDF
+            </button>
+            <button class="btn-export" onclick="copiarLinkDireto()">
+                <i class="material-icons">link</i> Copiar Link
+            </button>
+        </div>
+        <div class="toolbar-right">
+            <span class="table-badge">${listaOrgaos.length} órgãos</span>
+            <div class="table-search-container">
+                <i class="material-icons" style="font-size:14px;color:#94a3b8;">search</i>
+                <input class="table-search-input" id="buscaOrgaoVG" placeholder="Buscar órgão na tabela..."
+                    oninput="filtrarTabelaVG(this.value)">
+            </div>
+        </div>
+    </div>
+
+    <!-- TABELA POR ÓRGÃO -->
+    <div class="table-container">
+        <div class="table-fixed-header-container">
+            <table class="table" id="tabVisao">
+                <thead>
+                    <tr>
+                        ${thSortLeft('orgao_recebedor', 'Órgão Recebedor')}
+                        ${thSort('qtdBens', 'Qtd. de Bens')}
+                        ${thSort('total', 'Registros')}
+                        ${thSort('doacoes', 'Doações')}
+                        ${thSort('comodatos', 'Comodatos')}
+                        <th class="text-center">Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyVisao">
+                    ${pagina.map(o => `
+                    <tr>
+                        <td><a class="orgao-link" onclick="irParaOrgao('${escapar(o.nome)}')">${o.nome}</a></td>
+                        <td class="text-center fw-bold">${o.qtdBens.toLocaleString('pt-BR')}</td>
+                        <td class="text-center">${o.total.toLocaleString('pt-BR')}</td>
+                        <td class="text-center">${o.doacoes.toLocaleString('pt-BR')}</td>
+                        <td class="text-center">${o.comodatos.toLocaleString('pt-BR')}</td>
+                        <td class="text-center">
+                            <button class="btn-action" title="Ver registros do órgão" onclick="irParaOrgao('${escapar(o.nome)}')">
+                                <i class="material-icons" style="font-size:15px">visibility</i>
+                            </button>
+                        </td>
+                    </tr>`).join('')}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td><strong>TOTAL GERAL</strong></td>
+                        <td class="text-center">${totalQtdBens.toLocaleString('pt-BR')}</td>
+                        <td class="text-center">${total.toLocaleString('pt-BR')}</td>
+                        <td class="text-center">${doacoes.toLocaleString('pt-BR')}</td>
+                        <td class="text-center">${comodatos.toLocaleString('pt-BR')}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- PAGINAÇÃO -->
+    <div class="pagination-container">
+        <div class="pagination-info">Página ${paginaVisao} de ${totalPags || 1} — ${listaOrgaos.length} órgãos</div>
+        <nav>
+            <ul class="pagination mb-0">
+                <li class="page-item ${paginaVisao <= 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="mudarPagVisao(${paginaVisao-1});return false;">«</a>
+                </li>
+                ${Array.from({length: Math.min(totalPags, 5)}, (_, i) => {
+                    const p = Math.max(1, Math.min(paginaVisao - 2, Math.max(1, totalPags - 4))) + i;
+                    return p <= totalPags ? `<li class="page-item ${p === paginaVisao ? 'active' : ''}"><a class="page-link" href="#" onclick="mudarPagVisao(${p});return false;">${p}</a></li>` : '';
+                }).join('')}
+                <li class="page-item ${paginaVisao >= totalPags ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="mudarPagVisao(${paginaVisao+1});return false;">»</a>
+                </li>
+            </ul>
+        </nav>
+        <select class="items-per-page" onchange="itensPorPaginaVisao=+this.value;paginaVisao=1;renderVisaoGeral()">
+            ${[10, 25, 50, 100].map(n => `<option value="${n}" ${itensPorPaginaVisao === n ? 'selected' : ''}>${n} / pág</option>`).join('')}
+        </select>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+        <button class="btn-topo" onclick="voltarAoTopo()">
+            <i class="material-icons">arrow_upward</i> Voltar ao topo
+        </button>
+    </div>`;
+
+    document.getElementById('visao-content').innerHTML = html;
+
+    setTimeout(() => {
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+    }, 100);
+
+    setTimeout(() => {
+        const ctxE = document.getElementById('chartEvolucaoAno');
+        if (ctxE) {
+            if (chartEvolucao) chartEvolucao.destroy();
+            chartEvolucao = new Chart(ctxE, {
+                type: 'bar',
+                data: {
+                    labels: evolucaoOrdenada.map(e => e[0]),
+                    datasets: [{
+                        label: 'Qtd. de Bens',
+                        data: evolucaoOrdenada.map(e => e[1]),
+                        backgroundColor: evolucaoOrdenada.map(e => parseInt(e[0]) < 2024 ? '#7aa6c2' : chartPalette[0]),
+                        borderRadius: 4,
+                        barThickness: 36
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString('pt-BR')} bens` } }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 12 } } },
+                        y: { grid: { display: false }, beginAtZero: true }
+                    }
+                }
+            });
+        }
+    }, 100);
+
+    setTimeout(iframeUpdateHeight, 400);
+}
+
+function filtrarTabelaVG(valor) {
+    valor = valor.toLowerCase();
+    document.querySelectorAll('#tbodyVisao tr').forEach(tr => {
+        tr.style.display = tr.textContent.toLowerCase().includes(valor) ? '' : 'none';
+    });
+}
+
+function mudarPagVisao(p) {
+    if (p < 1) return;
+    paginaVisao = p;
+    renderVisaoGeral();
+}
+
+function ordenarVisao(col) {
+    ordenacaoVisao = { col, dir: ordenacaoVisao.col === col && ordenacaoVisao.dir === 'asc' ? 'desc' : 'asc' };
+    renderVisaoGeral();
+}
+
+function aplicarFiltroVisao() {
+    filtroVisao.ano   = document.getElementById('vg-ano').value;
+    filtroVisao.orgao = document.getElementById('vg-orgao').value;
+    paginaVisao = 1;
+    renderVisaoGeral();
+}
+
+function limparFiltroVisao() {
+    filtroVisao = { ano: '', orgao: '' };
+    paginaVisao = 1;
+    renderVisaoGeral();
+}
+
+function irParaOrgao(orgao) {
+    filtroConsulta = { ano: filtroVisao.ano || '', tipo: '', orgao: orgao, natureza: '', doador: '', palavra: '' };
+    paginaConsulta = 1;
+    buscaRapida = '';
+    document.getElementById('consulta-tab-btn').click();
+    renderConsulta();
+}
+
+function exportarVisaoCSV() {
+    let dados = dadosCompletos;
+    if (filtroVisao.ano)   dados = dados.filter(d => d.ano_instrumento === filtroVisao.ano);
+    if (filtroVisao.orgao) dados = dados.filter(d => (d.orgao_recebedor||'').toLowerCase().includes(filtroVisao.orgao.toLowerCase()));
+    const orgaosMap = {};
+    for (const d of dados) {
+        const org = d.orgao_recebedor || 'NÃO INFORMADO';
+        if (!orgaosMap[org]) orgaosMap[org] = { orgao: org, qtdBens: 0, total: 0, doacoes: 0, comodatos: 0 };
+        orgaosMap[org].total++;
+        orgaosMap[org].qtdBens += parseInt(d.quantidade_objeto) || 1;
+        if (d.tipo_instrumento.toLowerCase().includes('doa')) orgaosMap[org].doacoes++;
+        else orgaosMap[org].comodatos++;
+    }
+    const csv = Papa.unparse(Object.values(orgaosMap), { delimiter: ';' });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `visao_geral_orgaos.csv`; a.click();
+}
+
+function exportarVisaoPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape' });
+    doc.setFontSize(11);
+    doc.text(`Doações e Comodatos — Visão Geral por Órgão${filtroVisao.ano ? ' (' + filtroVisao.ano + ')' : ''}`, 14, 10);
+    let dados = dadosCompletos;
+    if (filtroVisao.ano)   dados = dados.filter(d => d.ano_instrumento === filtroVisao.ano);
+    if (filtroVisao.orgao) dados = dados.filter(d => (d.orgao_recebedor||'').toLowerCase().includes(filtroVisao.orgao.toLowerCase()));
+    const orgaosMap = {};
+    for (const d of dados) {
+        const org = d.orgao_recebedor || 'NÃO INFORMADO';
+        if (!orgaosMap[org]) orgaosMap[org] = { qtdBens: 0, total: 0, doacoes: 0, comodatos: 0 };
+        orgaosMap[org].total++;
+        orgaosMap[org].qtdBens += parseInt(d.quantidade_objeto) || 1;
+        if (d.tipo_instrumento.toLowerCase().includes('doa')) orgaosMap[org].doacoes++;
+        else orgaosMap[org].comodatos++;
+    }
+    const rows = Object.entries(orgaosMap).map(([n, i]) => [n, i.qtdBens, i.total, i.doacoes, i.comodatos]);
+    doc.autoTable({
+        startY: 16,
+        head: [['Órgão Recebedor', 'Qtd. Bens', 'Registros', 'Doações', 'Comodatos']],
+        body: rows,
+        foot: [['TOTAL GERAL', rows.reduce((a,r)=>a+r[1],0), rows.reduce((a,r)=>a+r[2],0), rows.reduce((a,r)=>a+r[3],0), rows.reduce((a,r)=>a+r[4],0)]],
+        headStyles: { fillColor: [32, 68, 93] },
+        footStyles: { fillColor: [223, 227, 232], textColor: [0,0,0], fontStyle: 'bold' },
+        didDrawPage: () => { doc.setFontSize(9); doc.text(`Emitido em: ${new Date().toLocaleString('pt-BR')}`, 14, doc.internal.pageSize.height - 5); }
+    });
+    doc.save(`visao_geral_orgaos.pdf`);
+}
+
+// ============================================================
+// 7. CONSULTA INDIVIDUAL
+// ============================================================
+function renderConsulta() {
+    dadosFiltrados = dadosCompletos.filter(item => {
+        if (filtroConsulta.ano     && item.ano_instrumento !== filtroConsulta.ano) return false;
+        if (filtroConsulta.tipo    && !(item.tipo_instrumento||'').toLowerCase().includes(filtroConsulta.tipo.toLowerCase())) return false;
+        if (filtroConsulta.orgao   && !(item.orgao_recebedor||'').toLowerCase().includes(filtroConsulta.orgao.toLowerCase())) return false;
+        if (filtroConsulta.natureza && !(item.natureza_doador||'').toLowerCase().includes(filtroConsulta.natureza.toLowerCase())) return false;
+        if (filtroConsulta.doador  && !(item.doador_comodante||'').toLowerCase().includes(filtroConsulta.doador.toLowerCase())) return false;
+        if (buscaRapida && buscaRapida.length >= 30) {
+            const busca = buscaRapida.toLowerCase();
+            const campos = [item.objeto_descritivo, item.doador_comodante, item.orgao_recebedor, item.processo_sei];
+            if (!campos.some(c => (c||'').toLowerCase().includes(busca))) return false;
+        }
+        return true;
+    });
+
+    dadosFiltrados.sort((a, b) => {
+        let va = a[ordenacaoConsulta.col] || '';
+        let vb = b[ordenacaoConsulta.col] || '';
+        if (ordenacaoConsulta.col === 'ano_instrumento') { va = parseInt(va)||0; vb = parseInt(vb)||0; }
+        if (typeof va === 'string') va = va.toLowerCase();
+        if (typeof vb === 'string') vb = vb.toLowerCase();
+        return ordenacaoConsulta.dir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+    });
+
+    const total = dadosFiltrados.length;
+    const totalPags = Math.ceil(total / itensPorPaginaConsulta);
+    paginaConsulta = Math.min(paginaConsulta, Math.max(1, totalPags));
+    const inicio = (paginaConsulta - 1) * itensPorPaginaConsulta;
+    const pagina = dadosFiltrados.slice(inicio, inicio + itensPorPaginaConsulta);
+
+    const anosDisp   = [...new Set(dadosCompletos.map(d => d.ano_instrumento).filter(a => a && a !== '0' && /^(19|20)\d{2}$/.test(a)))].sort();
+    const tiposDisp  = [...new Set(dadosCompletos.map(d => d.tipo_instrumento).filter(Boolean))].sort();
+    const orgaosDisp = [...new Set(dadosCompletos.map(d => d.orgao_recebedor).filter(Boolean))].sort();
+
+    const thC = (col, label) => {
+        const ativo = ordenacaoConsulta.col === col;
+        const icon  = ativo ? (ordenacaoConsulta.dir === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more';
+        return `<th class="sortable-header text-center" onclick="ordenarConsulta('${col}')">
+            ${label} <i class="material-icons">${icon}</i>
+        </th>`;
+    };
+
+    const charCount = buscaRapida.length;
+    const restante  = Math.max(0, 30 - charCount);
+    const hintClass = charCount > 0 && charCount < 30 ? 'warn' : '';
+    const hintMsg   = charCount === 0
+        ? 'Digite ao menos 30 caracteres para buscar'
+        : (charCount < 30 ? `Ainda faltam ${restante} caractere(s)` : `✔ Busca ativa (${charCount} caracteres)`);
+
+    const html = `
+    <!-- FILTROS -->
+    <div class="filter-container">
+        <div class="consulta-filters-row">
+            <div class="consulta-filter-group">
+                <label class="filter-label">Ano</label>
+                <select class="form-select modern-select" id="ci-ano">
+                    <option value="">Todos</option>
+                    ${anosDisp.map(a => `<option value="${a}" ${filtroConsulta.ano === a ? 'selected' : ''}>${a}</option>`).join('')}
+                </select>
+            </div>
+            <div class="consulta-filter-group">
+                <label class="filter-label">Tipo de Instrumento</label>
+                <select class="form-select modern-select" id="ci-tipo">
+                    <option value="">Todos</option>
+                    ${tiposDisp.map(t => `<option value="${t}" ${filtroConsulta.tipo === t ? 'selected' : ''}>${t}</option>`).join('')}
+                </select>
+            </div>
+            <div class="consulta-filter-group">
+                <label class="filter-label">Órgão Recebedor</label>
+                <select class="form-select modern-select" id="ci-orgao">
+                    <option value="">Todos</option>
+                    ${orgaosDisp.map(o => `<option value="${o}" ${filtroConsulta.orgao === o ? 'selected' : ''}>${o}</option>`).join('')}
+                </select>
+            </div>
+            <div class="consulta-filter-group">
+                <label class="filter-label">Natureza do Doador</label>
+                <select class="form-select modern-select" id="ci-natureza">
+                    <option value="">Todas</option>
+                    <option value="Público"  ${filtroConsulta.natureza === 'Público'  ? 'selected' : ''}>Público</option>
+                    <option value="Privado"  ${filtroConsulta.natureza === 'Privado'  ? 'selected' : ''}>Privado</option>
+                </select>
+            </div>
+            <div class="consulta-filter-group">
+                <label class="filter-label">Doador / Comodante</label>
+                <input class="form-control" id="ci-doador" placeholder="Nome do doador..." value="${filtroConsulta.doador}">
+            </div>
+        </div>
+        <div class="consulta-buttons-row">
+            <button class="btn-pesquisa" onclick="aplicarFiltroConsulta()">
+                <i class="material-icons">search</i> Pesquisar
+            </button>
+            <button class="btn-secondary-custom" onclick="limparFiltroConsulta()">
+                <i class="material-icons">clear</i> Limpar Filtros
+            </button>
+        </div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <button class="btn-export" onclick="exportarConsultaCSV()">
+                <i class="material-icons">description</i> CSV
+            </button>
+            <button class="btn-export" onclick="exportarConsultaPDF()">
+                <i class="material-icons">print</i> PDF
+            </button>
+            <button class="btn-export" onclick="copiarLinkDireto()">
+                <i class="material-icons">link</i> Copiar Link
+            </button>
+        </div>
+        <div class="toolbar-right">
+            <span class="table-badge" id="badgeTotalConsulta">${total.toLocaleString('pt-BR')} registros</span>
+            <div>
+                <div class="table-search-container">
+                    <i class="material-icons" style="font-size:14px;color:#94a3b8;">search</i>
+                    <input class="table-search-input"
+                        id="buscaRapidaInput"
+                        placeholder="Busca rápida (mín. 30 caracteres)..."
+                        maxlength="500"
+                        value="${buscaRapida}"
+                        oninput="onBuscaRapida(this.value)">
+                </div>
+                <div class="search-hint ${hintClass}" id="searchHint">${hintMsg}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABELA -->
+    <div class="table-container">
+        <div class="table-fixed-header-container">
+            <table class="table" id="tabConsulta">
+                <thead>
+                    <tr>
+                        ${thC('ano_instrumento', 'Ano')}
+                        <th class="text-center">Tipo</th>
+                        <th>Órgão Recebedor</th>
+                        <th>Objeto</th>
+                        ${thC('quantidade_objeto', 'Qtd.')}
+                        <th>Doador / Comodante</th>
+                        <th class="text-center">Natureza</th>
+                        <th class="text-center">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${pagina.map((item, idx) => `
+                    <tr>
+                        <td class="text-center">${item.ano_instrumento || '-'}${item.mes_instrumento ? '/' + item.mes_instrumento : ''}</td>
+                        <td class="text-center">${badgeTipo(item.tipo_instrumento)}</td>
+                        <td><a class="orgao-link" onclick="irParaOrgaoConsulta('${escapar(item.orgao_recebedor)}')">${(item.orgao_recebedor||'-').substring(0,45)}</a></td>
+                        <td title="${escapar(item.objeto_descritivo)}">${(item.objeto_descritivo||'-').substring(0,55)}${(item.objeto_descritivo||'').length > 55 ? '…' : ''}</td>
+                        <td class="text-center">${item.quantidade_objeto || '1'}</td>
+                        <td>${(item.doador_comodante||'-').substring(0,40)}</td>
+                        <td class="text-center">${badgeNatureza(item.natureza_doador)}</td>
+                        <td class="text-center">
+                            <button class="btn-action" title="Ver detalhes" onclick="abrirModal(${inicio + idx})">
+                                <i class="material-icons" style="font-size:15px">visibility</i>
+                            </button>
+                        </td>
+                    </tr>`).join('')}
+                    ${pagina.length === 0 ? `<tr><td colspan="8" class="text-center text-muted py-4" style="font-size:13px">Nenhum registro encontrado.</td></tr>` : ''}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PAGINAÇÃO -->
+    <div class="pagination-container">
+        <div class="pagination-info">Página ${paginaConsulta} de ${totalPags || 1} — ${total.toLocaleString('pt-BR')} registros</div>
+        <nav>
+            <ul class="pagination mb-0">
+                <li class="page-item ${paginaConsulta <= 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="mudarPagConsulta(${paginaConsulta-1});return false;">«</a>
+                </li>
+                ${Array.from({length: Math.min(totalPags, 5)}, (_, i) => {
+                    const p = Math.max(1, Math.min(paginaConsulta - 2, Math.max(1, totalPags - 4))) + i;
+                    return p <= totalPags ? `<li class="page-item ${p === paginaConsulta ? 'active' : ''}"><a class="page-link" href="#" onclick="mudarPagConsulta(${p});return false;">${p}</a></li>` : '';
+                }).join('')}
+                <li class="page-item ${paginaConsulta >= totalPags ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="mudarPagConsulta(${paginaConsulta+1});return false;">»</a>
+                </li>
+            </ul>
+        </nav>
+        <select class="items-per-page" onchange="itensPorPaginaConsulta=+this.value;paginaConsulta=1;renderConsulta()">
+            ${[25, 50, 100, 200].map(n => `<option value="${n}" ${itensPorPaginaConsulta === n ? 'selected' : ''}>${n} / pág</option>`).join('')}
+        </select>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+        <button class="btn-topo" onclick="voltarAoTopo()">
+            <i class="material-icons">arrow_upward</i> Voltar ao topo
+        </button>
+    </div>`;
+
+    document.getElementById('consulta-content').innerHTML = html;
+    setTimeout(iframeUpdateHeight, 300);
+}
+
+function onBuscaRapida(val) {
+    buscaRapida = val;
+    const hint = document.getElementById('searchHint');
+    const count = val.length;
+    const restante = Math.max(0, 30 - count);
+    if (count === 0) {
+        hint.className = 'search-hint';
+        hint.textContent = 'Digite ao menos 30 caracteres para buscar';
+    } else if (count < 30) {
+        hint.className = 'search-hint warn';
+        hint.textContent = `Ainda faltam ${restante} caractere(s)`;
+    } else {
+        hint.className = 'search-hint';
+        hint.textContent = `✔ Busca ativa (${count} caracteres)`;
+    }
+    if (count >= 30 || count === 0) {
+        paginaConsulta = 1;
+        renderConsulta();
+    }
+}
+
+function irParaOrgaoConsulta(orgao) {
+    filtroConsulta.orgao = orgao;
+    paginaConsulta = 1;
+    renderConsulta();
+}
+
+function mudarPagConsulta(p) { if (p >= 1) { paginaConsulta = p; renderConsulta(); } }
+function ordenarConsulta(col) {
+    ordenacaoConsulta = { col, dir: ordenacaoConsulta.col === col && ordenacaoConsulta.dir === 'asc' ? 'desc' : 'asc' };
+    renderConsulta();
+}
+
+function aplicarFiltroConsulta() {
+    filtroConsulta.ano      = document.getElementById('ci-ano').value;
+    filtroConsulta.tipo     = document.getElementById('ci-tipo').value;
+    filtroConsulta.orgao    = document.getElementById('ci-orgao').value;
+    filtroConsulta.natureza = document.getElementById('ci-natureza').value;
+    filtroConsulta.doador   = document.getElementById('ci-doador').value;
+    paginaConsulta = 1;
+    renderConsulta();
+}
+
+function limparFiltroConsulta() {
+    filtroConsulta = { ano: '', tipo: '', orgao: '', natureza: '', doador: '', palavra: '' };
+    buscaRapida = '';
+    paginaConsulta = 1;
+    renderConsulta();
+}
+
+function exportarConsultaCSV() {
+    const csv = Papa.unparse(dadosFiltrados, { delimiter: ';' });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `doacoes_comodatos_consulta.csv`; a.click();
+}
+
+function exportarConsultaPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape' });
+    doc.setFontSize(11);
+    doc.text('Doações e Comodatos — Relatório de Consulta', 14, 10);
+    const colunas = ['Ano', 'Tipo', 'Órgão Recebedor', 'Objeto', 'Qtd.', 'Doador', 'Natureza', 'Processo SEI'];
+    const linhas = dadosFiltrados.slice(0, 500).map(i => [
+        i.ano_instrumento || '-',
+        i.tipo_instrumento || '-',
+        (i.orgao_recebedor || '').substring(0, 35),
+        (i.objeto_descritivo || '').substring(0, 40),
+        i.quantidade_objeto || '1',
+        (i.doador_comodante || '').substring(0, 30),
+        i.natureza_doador || '-',
+        i.processo_sei || '-'
+    ]);
+    doc.autoTable({
+        head: [colunas], body: linhas, startY: 16,
+        headStyles: { fillColor: [32, 68, 93] },
+        styles: { fontSize: 8 },
+        didDrawPage: () => { doc.setFontSize(9); doc.text(`Emitido em: ${new Date().toLocaleString('pt-BR')}`, 14, doc.internal.pageSize.height - 5); }
+    });
+    doc.save('relatorio_doacoes_comodatos.pdf');
+}
+
+// ============================================================
+// 8. MODAL DETALHES
+// ============================================================
+function abrirModal(idx) {
+    const item = dadosFiltrados[idx];
+    if (!item) return;
+    itemSelecionado = item;
+
+    const html = `
+    <div class="modal-server-banner">
+        <i class="material-icons" style="font-size:32px;opacity:0.7">description</i>
+        <div>
+            <div class="server-name">${v(item.tipo_instrumento)} — ${v(item.ano_instrumento)}</div>
+            <div class="server-meta">
+                <span><strong>Órgão:</strong> ${v(item.orgao_recebedor)}</span>
+                <span>|</span>
+                ${badgeNatureza(item.natureza_doador)}
+            </div>
+        </div>
+    </div>
+    <div class="row g-2">
+        <div class="col-md-6">
+            <div class="info-section">
+                <h6>Informações do Instrumento</h6>
+                <div class="info-row"><div class="info-label-modal">Tipo</div><div class="info-value-modal">${badgeTipo(item.tipo_instrumento)}</div></div>
+                <div class="info-row"><div class="info-label-modal">Ano / Mês</div><div class="info-value-modal">${v(item.ano_instrumento)}${item.mes_instrumento ? ' / ' + item.mes_instrumento : ''}</div></div>
+                <div class="info-row"><div class="info-label-modal">Categoria de Valor</div><div class="info-value-modal">${v(item.categoria_valor)}</div></div>
+                <div class="info-row"><div class="info-label-modal">Vigência</div><div class="info-value-modal">${v(item.vigencia)}</div></div>
+                <div class="info-row"><div class="info-label-modal">Processo SEI</div><div class="info-value-modal">${v(item.processo_sei)}</div></div>
+                <div class="info-row"><div class="info-label-modal">Recurso TJMG/MPMG</div><div class="info-value-modal">${item.recurso_tjmg_ou_mpmg === 'Sim' ? '✅ Sim' : (item.recurso_tjmg_ou_mpmg === 'Não' ? '❌ Não' : v(item.recurso_tjmg_ou_mpmg))}</div></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="info-section">
+                <h6>Partes Envolvidas</h6>
+                <div class="info-row"><div class="info-label-modal">Órgão Recebedor</div><div class="info-value-modal">${v(item.orgao_recebedor)}</div></div>
+                <div class="info-row"><div class="info-label-modal">Código do Órgão</div><div class="info-value-modal">${v(item.codigo_orgao_recebedor)}</div></div>
+                <div class="info-row"><div class="info-label-modal">Natureza do Doador</div><div class="info-value-modal">${badgeNatureza(item.natureza_doador)}</div></div>
+                <div class="info-row"><div class="info-label-modal">Doador / Comodante</div><div class="info-value-modal">${v(item.doador_comodante)}</div></div>
+            </div>
+            <div class="info-section">
+                <h6>Objeto</h6>
+                <div class="info-row"><div class="info-label-modal">Descrição</div><div class="info-value-modal">${v(item.objeto_descritivo)}</div></div>
+                <div class="info-row"><div class="info-label-modal">Quantidade</div><div class="info-value-modal">${v(item.quantidade_objeto)}</div></div>
+            </div>
+        </div>
+    </div>`;
+
+    document.getElementById('modalContent').innerHTML = html;
+    new bootstrap.Modal(document.getElementById('detailModal')).show();
+}
+
+function exportarModalPDF() {
+    if (!itemSelecionado) return;
+    const s = itemSelecionado;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait' });
+    doc.setFontSize(13);
+    doc.text(`Detalhes: ${v(s.tipo_instrumento)} — ${v(s.ano_instrumento)}`, 14, 14);
+    doc.autoTable({
+        startY: 22,
+        head: [['Campo', 'Valor']],
+        body: [
+            ['Tipo de Instrumento', v(s.tipo_instrumento)],
+            ['Ano / Mês', `${v(s.ano_instrumento)}${s.mes_instrumento ? ' / ' + s.mes_instrumento : ''}`],
+            ['Categoria de Valor', v(s.categoria_valor)],
+            ['Vigência', v(s.vigencia)],
+            ['Processo SEI', v(s.processo_sei)],
+            ['Órgão Recebedor', v(s.orgao_recebedor)],
+            ['Código do Órgão', v(s.codigo_orgao_recebedor)],
+            ['Natureza do Doador', v(s.natureza_doador)],
+            ['Doador / Comodante', v(s.doador_comodante)],
+            ['Objeto', v(s.objeto_descritivo)],
+            ['Quantidade', v(s.quantidade_objeto)],
+            ['Recurso TJMG/MPMG', v(s.recurso_tjmg_ou_mpmg)]
+        ],
+        headStyles: { fillColor: [32, 68, 93] },
+        styles: { fontSize: 10 },
+        didDrawPage: () => { doc.setFontSize(8); doc.text(`Emitido em: ${new Date().toLocaleString('pt-BR')}`, 14, doc.internal.pageSize.height - 5); }
+    });
+    doc.save(`detalhe_${v(s.processo_sei).replace(/\//g, '-')}.pdf`);
+}
+
+// ============================================================
+// 9. DOWNLOADS
+// ============================================================
+function renderDownloads() {
+    document.getElementById('downloads-content').innerHTML = `
+    <div class="filter-container">
+        <div style="text-align:center;padding:10px 0;">
+            <i class="material-icons" style="font-size:48px;color:#20445d;">cloud_download</i>
+            <h5 style="margin-top:8px;margin-bottom:4px;">Portal de Dados Abertos</h5>
+            <p style="color:#6c757d;font-size:13px;margin-bottom:12px;">Dados completos de Doações e Comodatos da Casa Civil de Minas Gerais</p>
+            <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                <a href="${CSV_URL}" target="_blank" class="btn-pesquisa">
+                    <i class="material-icons">download</i> Baixar CSV Original
+                </a>
+                <a href="https://github.com/transparencia-mg/casa_civil_doacoes-comodatos" target="_blank" class="btn-pesquisa">
+                    <i class="material-icons">open_in_new</i> Repositório GitHub
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="filter-container">
+        <h5 style="margin-bottom:12px;font-size:15px;">
+            <i class="material-icons" style="vertical-align:middle;margin-right:6px;">info</i>
+            Metadados — Dicionário de Variáveis
+        </h5>
+        <div class="d-flex gap-2 mb-3">
+            <button class="btn-export" onclick="baixarDicionarioCSV()"><i class="material-icons">description</i> CSV</button>
+            <button class="btn-export" onclick="baixarDicionarioPDF()"><i class="material-icons">print</i> PDF</button>
+        </div>
+        <div class="table-container">
+            <div class="table-fixed-header-container">
+                <table class="table table-bordered">
+                    <thead><tr><th>Campo</th><th>Descrição</th><th>Tipo</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>tipo_instrumento</code></td><td>Tipo do instrumento (Doação, Comodato, etc.)</td><td>Texto</td></tr>
+                        <tr><td><code>ano_instrumento</code></td><td>Ano do instrumento</td><td>Numérico</td></tr>
+                        <tr><td><code>mes_instrumento</code></td><td>Mês do instrumento</td><td>Numérico</td></tr>
+                        <tr><td><code>categoria_valor</code></td><td>Faixa de valor estimado do bem</td><td>Texto</td></tr>
+                        <tr><td><code>orgao_recebedor</code></td><td>Nome do órgão que recebeu o bem</td><td>Texto</td></tr>
+                        <tr><td><code>codigo_orgao_recebedor</code></td><td>Código do órgão recebedor</td><td>Texto</td></tr>
+                        <tr><td><code>natureza_doador</code></td><td>Natureza do doador (Público / Privado)</td><td>Texto</td></tr>
+                        <tr><td><code>doador_comodante</code></td><td>Nome do doador ou comodante</td><td>Texto</td></tr>
+                        <tr><td><code>objeto_descritivo</code></td><td>Descrição do bem doado ou cedido</td><td>Texto</td></tr>
+                        <tr><td><code>quantidade_objeto</code></td><td>Quantidade de itens</td><td>Numérico</td></tr>
+                        <tr><td><code>vigencia</code></td><td>Prazo de vigência (para comodatos)</td><td>Texto</td></tr>
+                        <tr><td><code>processo_sei</code></td><td>Número do processo SEI relacionado</td><td>Texto</td></tr>
+                        <tr><td><code>recurso_tjmg_ou_mpmg</code></td><td>Indica se houve recurso oriundo do TJMG ou MPMG</td><td>Texto (Sim/Não)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>`;
+    setTimeout(iframeUpdateHeight, 300);
+}
+
+function baixarDicionarioCSV() {
+    const linhas = [
+        ['Campo','Descrição','Tipo'],
+        ['tipo_instrumento','Tipo do instrumento','Texto'],
+        ['ano_instrumento','Ano do instrumento','Numérico'],
+        ['mes_instrumento','Mês do instrumento','Numérico'],
+        ['categoria_valor','Faixa de valor estimado','Texto'],
+        ['orgao_recebedor','Órgão recebedor','Texto'],
+        ['codigo_orgao_recebedor','Código do órgão recebedor','Texto'],
+        ['natureza_doador','Natureza do doador','Texto'],
+        ['doador_comodante','Doador ou comodante','Texto'],
+        ['objeto_descritivo','Descrição do bem','Texto'],
+        ['quantidade_objeto','Quantidade','Numérico'],
+        ['vigencia','Vigência','Texto'],
+        ['processo_sei','Processo SEI','Texto'],
+        ['recurso_tjmg_ou_mpmg','Recurso TJMG/MPMG','Texto']
+    ];
+    const csv = linhas.map(l => l.join(';')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'dicionario_doacoes_comodatos.csv'; a.click();
+}
+
+function baixarDicionarioPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(14);
+    doc.text('Dicionário de Dados — Doações e Comodatos', 14, 15);
+    doc.autoTable({
+        startY: 25,
+        head: [['Campo', 'Descrição', 'Tipo']],
+        body: [
+            ['tipo_instrumento','Tipo do instrumento','Texto'],
+            ['ano_instrumento','Ano do instrumento','Numérico'],
+            ['mes_instrumento','Mês do instrumento','Numérico'],
+            ['categoria_valor','Faixa de valor estimado','Texto'],
+            ['orgao_recebedor','Órgão recebedor','Texto'],
+            ['codigo_orgao_recebedor','Código do órgão','Texto'],
+            ['natureza_doador','Natureza do doador','Texto'],
+            ['doador_comodante','Doador ou comodante','Texto'],
+            ['objeto_descritivo','Descrição do bem','Texto'],
+            ['quantidade_objeto','Quantidade','Numérico'],
+            ['vigencia','Vigência','Texto'],
+            ['processo_sei','Processo SEI','Texto'],
+            ['recurso_tjmg_ou_mpmg','Recurso TJMG/MPMG','Texto']
+        ],
+        headStyles: { fillColor: [32, 68, 93] }
+    });
+    doc.save('dicionario_doacoes_comodatos.pdf');
+}
+
+// ============================================================
+// 10. INICIALIZAÇÃO
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    carregarDados();
+    document.getElementById('consulta-tab-btn').addEventListener('shown.bs.tab', () => {
+        if (dadosCompletos.length > 0 && !document.getElementById('consulta-content').innerHTML.trim()) {
+            renderConsulta();
+        }
+    });
+});
+
+// IFRAME RESIZE
+(function () {
+    function sendHeight() {
+        const h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) + 10;
+        try { window.parent.postMessage({ iframeHeight: h, iframeResize: true, type: 'resize' }, '*'); } catch(e) {}
+    }
+    if (window.ResizeObserver) new ResizeObserver(sendHeight).observe(document.body);
+    else { window.addEventListener('resize', sendHeight); setInterval(sendHeight, 2000); }
+    sendHeight();
+})();
+</script>
+</body>
+</html>
